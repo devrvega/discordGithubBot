@@ -1,13 +1,14 @@
 # Discord GitHub Bot
 
-A Discord bot that sends notifications to your Discord server whenever issues or pull requests are opened or closed in your GitHub repositories.
+A Discord bot that sends notifications to your Discord server whenever issues or pull requests are opened or closed and whenever a release is created in your GitHub repositories.
 
 ## Features
 
 - Notifies when issues are opened or closed
 - Notifies when pull requests are opened or closed
+- Notified when a release is created
 - Supports multiple repositories
-- Configurable Discord channels per repository
+- Configurable Discord text and forum channels per repository
 - Hosted on AWS Lambda
 - Secure configuration storage using AWS Secrets Manager
 
@@ -90,6 +91,7 @@ A Discord bot that sends notifications to your Discord server whenever issues or
 6. Select the following events:
    - Issues
    - Pull requests
+   - Releases
 7. Save the webhook
 
 ### 4. Deployment
