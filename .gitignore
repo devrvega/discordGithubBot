@@ -22,3 +22,11 @@ build/
 # OS files
 .DS_Store
 Thumbs.db 
+
+# Secrets
+.env.local
+secrets/
+secrets/*
+
+# Zip files
+*.zip
