@@ -9,8 +9,7 @@ A Discord bot that sends notifications to your Discord server whenever issues or
 - Supports multiple repositories
 - Configurable Discord channels per repository
 - Hosted on AWS Lambda
-- Uses DynamoDB for configuration storage
-- Secure token storage using AWS Secrets Manager
+- Secure configuration storage using AWS Secrets Manager
 
 ## Prerequisites
 
@@ -34,39 +33,50 @@ A Discord bot that sends notifications to your Discord server whenever issues or
 
 ### 2. AWS Setup
 
-1. Create a DynamoDB table:
-   ```bash
-   aws dynamodb create-table \
-     --table-name github-webhook-config \
-     --attribute-definitions AttributeName=repoName,AttributeType=S \
-     --key-schema AttributeName=repoName,KeyType=HASH \
-     --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
+1. Create a secret in AWS Secrets Manager with the following structure:
+   ```json
+   {
+     "discordToken": "your-discord-bot-token",
+     "repositories": {
+       "username/repo-name": {
+         "channelId": "your-discord-channel-id"
+       },
+       "username/another-repo": {
+         "channelId": "another-discord-channel-id"
+       }
+     }
+   }
    ```
 
-2. Create a secret in AWS Secrets Manager:
+   You can create it using the AWS CLI:
    ```bash
    aws secretsmanager create-secret \
-     --name discord-bot-token \
-     --secret-string '{"discordToken":"your-discord-bot-token"}'
+     --name github-discord-config \
+     --secret-string '{
+       "discordToken": "your-discord-bot-token",
+       "repositories": {
+         "username/repo-name": {
+           "channelId": "your-discord-channel-id"
+         }
+       }
+     }'
    ```
 
-3. Create an IAM role for the Lambda function with the following permissions:
+2. Create an IAM role for the Lambda function with the following permissions:
    - AWSLambdaBasicExecutionRole
-   - DynamoDB read access to the github-webhook-config table
-   - Secrets Manager read access to the discord-bot-token secret
+   - Secrets Manager read access to the github-discord-config secret
 
-4. Create an API Gateway endpoint:
+3. Create an API Gateway endpoint:
    - Create a new REST API
    - Create a POST method
    - Enable CORS
    - Deploy the API
 
-5. Create a Lambda function:
+4. Create a Lambda function:
    - Runtime: Node.js 18.x
    - Handler: dist/index.handler
    - Environment variables:
-     - CONFIG_TABLE_NAME: github-webhook-config
-     - DISCORD_TOKEN_SECRET_NAME: discord-bot-token
+     - CONFIG_SECRET_NAME: github-discord-config
 
 ### 3. GitHub Webhook Setup
 
@@ -80,20 +90,7 @@ A Discord bot that sends notifications to your Discord server whenever issues or
    - Pull requests
 7. Save the webhook
 
-### 4. Configuration
-
-Add your repository configuration to DynamoDB:
-
-```bash
-aws dynamodb put-item \
-  --table-name github-webhook-config \
-  --item '{
-    "repoName": {"S": "your-username/your-repo"},
-    "channelId": {"S": "your-discord-channel-id"}
-  }'
-```
-
-### 5. Deployment
+### 4. Deployment
 
 1. Install dependencies:
    ```bash
@@ -121,8 +118,7 @@ Once set up, the bot will automatically:
 
 ## Security Considerations
 
-- Discord token is stored securely in AWS Secrets Manager
-- DynamoDB only stores non-sensitive configuration data
+- All configuration is stored securely in AWS Secrets Manager
 - Use IAM roles with minimal required permissions
 - Enable API Gateway authentication if needed
 - Consider implementing webhook signature verification
@@ -130,11 +126,10 @@ Once set up, the bot will automatically:
 ## Troubleshooting
 
 1. Check CloudWatch logs for Lambda function errors
-2. Verify DynamoDB table permissions
+2. Verify Secrets Manager permissions and secret exists
 3. Ensure Discord bot has proper permissions in the server
 4. Verify GitHub webhook is properly configured
 5. Check API Gateway logs for any issues
-6. Verify Secrets Manager permissions and secret exists
 
 ## Contributing
 

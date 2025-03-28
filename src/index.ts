@@ -1,58 +1,41 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { Client, GatewayIntentBits, TextChannel } from 'discord.js';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
-const dynamoClient = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const secretsManager = new SecretsManagerClient({});
 
-interface WebhookConfig {
+interface RepoConfig {
   channelId: string;
 }
 
-async function getDiscordToken(): Promise<string> {
+interface Config {
+  discordToken: string;
+  repositories: {
+    [key: string]: RepoConfig;
+  };
+}
+
+async function getConfig(): Promise<Config> {
   const command = new GetSecretValueCommand({
-    SecretId: process.env.DISCORD_TOKEN_SECRET_NAME!
+    SecretId: process.env.CONFIG_SECRET_NAME!
   });
 
   const response = await secretsManager.send(command);
   if (!response.SecretString) {
-    throw new Error('Discord token not found in Secrets Manager');
+    throw new Error('Configuration not found in Secrets Manager');
   }
 
-  const secret = JSON.parse(response.SecretString);
-  return secret.discordToken;
+  return JSON.parse(response.SecretString);
 }
 
-async function getWebhookConfig(repoName: string): Promise<WebhookConfig | null> {
-  const command = new GetCommand({
-    TableName: process.env.CONFIG_TABLE_NAME!,
-    Key: {
-      repoName,
-    },
-  });
-
-  const result = await docClient.send(command);
-  if (!result.Item) {
-    return null;
-  }
-
-  return {
-    channelId: result.Item.channelId,
-  };
-}
-
-async function sendDiscordMessage(config: WebhookConfig, content: string): Promise<void> {
-  const discordToken = await getDiscordToken();
+async function sendDiscordMessage(config: Config, channelId: string, content: string): Promise<void> {
   const client = new Client({
     intents: [GatewayIntentBits.Guilds],
   });
 
   try {
-    await client.login(discordToken);
-    const channel = await client.channels.fetch(config.channelId);
+    await client.login(config.discordToken);
+    const channel = await client.channels.fetch(channelId);
     
     if (channel instanceof TextChannel) {
       await channel.send(content);
@@ -76,9 +59,11 @@ export const handler = async (
     const payload = JSON.parse(event.body);
     const repoName = payload.repository.full_name;
 
-    // Get webhook configuration from DynamoDB
-    const config = await getWebhookConfig(repoName);
-    if (!config) {
+    // Get configuration from Secrets Manager
+    const config = await getConfig();
+    const repoConfig = config.repositories[repoName];
+    
+    if (!repoConfig) {
       return {
         statusCode: 404,
         body: JSON.stringify({ message: 'No configuration found for repository' }),
@@ -118,7 +103,7 @@ export const handler = async (
     }
 
     if (message) {
-      await sendDiscordMessage(config, message);
+      await sendDiscordMessage(config, repoConfig.channelId, message);
     }
 
     return {

@@ -8,9 +8,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.0.0",
     "@aws-sdk/client-secrets-manager": "^3.0.0",
-    "@aws-sdk/lib-dynamodb": "^3.0.0",
     "discord.js": "^14.14.1"
   },
   "devDependencies": {
