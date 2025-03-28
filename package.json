@@ -6,8 +6,7 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "package": "zip -r lambda.zip dist/ node_modules/ package.json",
-    "deploy": "aws lambda update-function-code --function-name gitbot --zip-file fileb://lambda.zip"
+    "package": "zip -r lambda.zip dist/ node_modules/ package.json"
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.0.0",

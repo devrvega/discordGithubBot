@@ -39,7 +39,8 @@ A Discord bot that sends notifications to your Discord server whenever issues or
      "discordToken": "your-discord-bot-token",
      "repositories": {
        "username/repo-name": {
-         "channelId": "your-discord-channel-id"
+         "channelId": "your-discord-channel-id",  // Discord text channel ID for the repository
+         "forumId" : "your-discord-forum-id"  // Discord forum ID for the repository
        },
        "username/another-repo": {
          "channelId": "another-discord-channel-id"
@@ -56,7 +57,8 @@ A Discord bot that sends notifications to your Discord server whenever issues or
        "discordToken": "your-discord-bot-token",
        "repositories": {
          "username/repo-name": {
-           "channelId": "your-discord-channel-id"
+           "channelId": "your-discord-channel-id",
+           "forumId" : "your-discord-forum-id"
          }
        }
      }'
